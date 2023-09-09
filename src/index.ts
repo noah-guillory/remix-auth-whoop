@@ -21,7 +21,10 @@ export interface WhoopStrategyVerifyParams {
   something: "Dev may need";
 }
 
-export class WhoopStrategy<User> extends Strategy<User, WhoopStrategyVerifyParams> {
+export class WhoopStrategy<User> extends Strategy<
+  User,
+  WhoopStrategyVerifyParams
+> {
   name = "change-me";
 
   constructor(
