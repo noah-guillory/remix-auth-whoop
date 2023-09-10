@@ -1,48 +1,125 @@
-# Remix Auth - Strategy Template
+# Remix Auth - Whoop Stategy
 
-> A template for creating a new Remix Auth strategy.
-
-If you want to create a new strategy for Remix Auth, you could use this as a template for your repository.
-
-The repo installs the latest version of Remix Auth and do the setup for you to have tests, linting and typechecking.
-
-## How to use it
-
-1. In the `package.json` change `name` to your strategy name, also add a description and ideally an author, repository and homepage keys.
-2. In `src/index.ts` change the `MyStrategy` for the strategy name you want to use.
-3. Implement the strategy flow inside the `authenticate` method. Use `this.success` and `this.failure` to correctly send finish the flow.
-4. In `tests/index.test.ts` change the tests to use your strategy and test it. Inside the tests you have access to `jest-fetch-mock` to mock any fetch you may need to do.
-5. Once you are ready, set the secrets on Github
-   - `NPM_TOKEN`: The token for the npm registry
-   - `GIT_USER_NAME`: The git username you want the bump workflow to use in the commit.
-   - `GIT_USER_EMAIL`: The email you want the bump workflow to use in the commit.
-
-## Scripts
-
-- `build`: Build the project for production using the TypeScript compiler (strips the types).
-- `typecheck`: Check the project for type errors, this also happens in build but it's useful to do in development.
-- `lint`: Runs ESLint against the source codebase to ensure it pass the linting rules.
-- `test`: Runs all the test using Jest.
-
-## Documentations
-
-To facilitate creating a documentation for your strategy, you can use the following Markdown
-
-```markdown
-# Strategy Name
-
-<!-- Description -->
+The Whoop Strategy is used to authenticate users through [Whoop's OAuth flow](https://developer.whoop.com/docs/developing/oauth) using [Remix-Auth](https://github.com/sergiodxa/remix-auth), built on top of the [OAuth2Strategy](https://github.com/sergiodxa/remix-auth-oauth2).
 
 ## Supported runtimes
 
 | Runtime    | Has Support |
 | ---------- | ----------- |
 | Node.js    | ✅          |
-| Cloudflare | ✅          |
+| Cloudflare | Untested    |
 
 <!-- If it doesn't support one runtime, explain here why -->
 
 ## How to use
+### Create Whoop Developer account and App
 
-<!-- Explain how to use the strategy, here you should tell what options it expects from the developer when instantiating the strategy -->
+Follow the directions in the [Whoop Developer Documentation](https://developer.whoop.com/docs/developing/getting-started) to set up a developer account and `App`. Here, you define the OAuth scopes that you will be accessing and configurting the redirect URIs.
+
+### Install Dependencies
+```sh
+npm install remix-auth-whoop remix-auth remix-auth-oauth2
+```
+
+### Create the Stategy Instance
+```ts
+// app/services/auth.server.ts
+import { WhoopStrategy } from "remix-auth-whoop";
+import { Authenticator } from "remix-auth";
+import { sessionStorage } from "~/services/session.server";
+
+/**
+ * Note: The `User` type is a type that you have defined somewhere in your application
+ */
+export let authenticator = new Authenticator<User>(sessionStorage);
+
+let whoopStrategy = new WhoopStrategy(
+  {
+   clientID: "CLIENT_ID",
+   clientSecret: "CLIENT_SECRET",
+   callbackURL: "https://example.com/auth/whoop/callback", // This URL must be configured as a callback URI in the Whoop Developer dashboard
+   scope: ["read:profile", "read:cycles", "offline"] // Optional
+  },
+  async ({ accessToken, refreshToken, extraParams: { expires_in }, profile }) => {
+   const {first_name, last_name, user_id} = profile
+
+    const createUserParams = {
+        accessToken,
+        expiresAt: Date.now() + expires_in * 1000,
+        firstName: first_name,
+        lastName: last_name,
+        refreshToken,
+        userId: user_id,
+    }
+
+    const user = await prisma.user.upsert({
+        where: {userId: user_id},
+        create: createUserParams,
+        update: createUserParams,
+    })
+  }
+);
+
+authenticator.use(whoopStrategy);
+```
+
+Note: See [Whoop API Documentation](https://developer.whoop.com/api#section/Authentication/OAuth) on possible scopes
+
+### Setup your routes
+
+```tsx
+// app/routes/login.tsx
+export default function Login() {
+  return (
+    <form action="/auth/whoop" method="post">
+      <button>Login with Whoop</button>
+    </form>
+  );
+}
+```
+
+```tsx
+// app/routes/auth/whoop.tsx
+import type { ActionArgs } from "@remix-run/node";
+import { authenticator } from "~/auth.server";
+import { redirect } from "@remix-run/node";
+
+export const loader = () => redirect("/login");
+
+export const action = ({ request }: ActionArgs) => {
+  return authenticator.authenticate("whoop", request);
+};
+```
+
+```ts
+// app/routes/auth/whoop/callback.tsx
+import type { LoaderArgs } from "@remix-run/node";
+import { authenticator } from "~/auth.server";
+
+export const loader = ({ request }: LoaderArgs) => {
+  return authenticator.authenticate("whoop", request, {
+    successRedirect: "/dashboard",
+    failureRedirect: "/login",
+  });
+};
+```
+
+### Add Session Storage
+
+```ts
+// app/services/session.server.ts
+import { createCookieSessionStorage } from "@remix-run/node";
+
+export let sessionStorage = createCookieSessionStorage({
+  cookie: {
+    name: "_session", // use any name you want here
+    sameSite: "lax", // this helps with CSRF
+    path: "/", // remember to add this so the cookie will work in all routes
+    httpOnly: true, // for security reasons, make this cookie http only
+    secrets: ["s3cr3t"], // replace this with an actual secret
+    secure: process.env.NODE_ENV === "production", // enable this in prod only
+  },
+});
+
+export let { getSession, commitSession, destroySession } = sessionStorage;
 ```
