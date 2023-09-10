@@ -1,5 +1,4 @@
-import { SessionStorage } from "@remix-run/server-runtime";
-import { AuthenticateOptions, StrategyVerifyCallback } from "remix-auth";
+import { StrategyVerifyCallback } from "remix-auth";
 import {
   OAuth2Profile,
   OAuth2Strategy,
@@ -15,10 +14,6 @@ export type WhoopScope =
   | "read:body_measurement"
   | "offline";
 
-/**
- * This interface declares what configuration the strategy needs from the
- * developer to correctly work.
- */
 export interface WhoopStrategyOptions {
   clientID: string;
   clientSecret: string;
@@ -27,17 +22,16 @@ export interface WhoopStrategyOptions {
 }
 
 export interface WhoopProfile extends OAuth2Profile {
-  user_id: string;
+  user_id: number;
   email: string;
   first_name: string;
   last_name: string;
 }
 
 export interface WhoopExtraParams extends Record<string, string | number> {
-  expires_in: 3920;
-  token_type: "Bearer";
+  expires_in: 3600;
+  token_type: "bearer";
   scope: string;
-  id_token: string;
 }
 
 export const WhoopStrategyDefaultScopes: WhoopScope[] = [
@@ -87,21 +81,6 @@ export class WhoopStrategy<User> extends OAuth2Strategy<
     );
 
     this.scope = this.getScope(options.scope);
-  }
-
-  async authenticate(
-    request: Request,
-    sessionStorage: SessionStorage,
-    options: AuthenticateOptions
-  ): Promise<User> {
-    return await this.failure(
-      "Implement me!",
-      request,
-      sessionStorage,
-      options
-    );
-    // Uncomment me to do a success response
-    // this.success({} as User, request, sessionStorage, options);
   }
 
   protected authorizationParams() {
