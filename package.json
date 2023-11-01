@@ -25,7 +25,7 @@
     "README.md"
   ],
   "peerDependencies": {
-    "@remix-run/server-runtime": "^1.0.0"
+    "@remix-run/server-runtime": "^1.0.0 || ^2.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.14.2",
