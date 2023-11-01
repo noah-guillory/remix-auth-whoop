@@ -9,7 +9,7 @@
   ],
   "packageRules": [
     {
-      "matchPackagePatterns": ["eslint"],
+      "matchPackagePatterns": ["eslint", "prettier"],
       "groupName": "eslint"
     }
   ]
