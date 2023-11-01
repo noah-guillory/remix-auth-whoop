@@ -7,12 +7,10 @@
     ":automergeTypes",
     ":automergePr"
   ],
-  {
   "packageRules": [
     {
       "matchPackagePatterns": ["eslint"],
       "groupName": "eslint"
     }
   ]
-}
 }
