@@ -64,7 +64,7 @@ export class WhoopStrategy<User> extends OAuth2Strategy<
     verify: StrategyVerifyCallback<
       User,
       OAuth2StrategyVerifyParams<WhoopProfile, WhoopExtraParams>
-    >
+    >,
   ) {
     // And we pass the options to the super constructor using our own options
     // to generate them, this was we can ask less configuration to the developer
@@ -77,7 +77,7 @@ export class WhoopStrategy<User> extends OAuth2Strategy<
         clientSecret: options.clientSecret,
         callbackURL: options.callbackURL,
       },
-      verify
+      verify,
     );
 
     this.scope = this.getScope(options.scope);
