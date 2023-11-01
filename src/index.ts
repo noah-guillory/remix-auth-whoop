@@ -18,7 +18,7 @@ export interface WhoopStrategyOptions {
   clientID: string;
   clientSecret: string;
   callbackURL: string;
-  scope?: WhoopScope[] | string;
+  scope?: string;
 }
 
 export interface WhoopProfile extends OAuth2Profile {
@@ -34,13 +34,13 @@ export interface WhoopExtraParams extends Record<string, string | number> {
   scope: string;
 }
 
-export const WhoopStrategyDefaultScopes: WhoopScope[] = [
-  "read:profile",
-  "offline",
-];
+export const WhoopStrategyScopeSeperator = " ";
+
+export const WhoopStrategyDefaultScopes = ["read:profile", "offline"].join(
+  WhoopStrategyScopeSeperator,
+);
 
 export const WhoopStrategyDefaultName = "whoop";
-export const WhoopStrategyScopeSeperator = " ";
 
 export class WhoopStrategy<User> extends OAuth2Strategy<
   User,
@@ -49,8 +49,6 @@ export class WhoopStrategy<User> extends OAuth2Strategy<
 > {
   name = WhoopStrategyDefaultName;
   userInfoURL = "https://api.prod.whoop.com/developer/v1/user/profile/basic";
-
-  private readonly scope: WhoopScope[];
 
   // We receive our custom options and our verify callback
   constructor(
@@ -80,12 +78,12 @@ export class WhoopStrategy<User> extends OAuth2Strategy<
       verify,
     );
 
-    this.scope = this.getScope(options.scope);
+    this.scope = options.scope ?? WhoopStrategyDefaultScopes;
   }
 
   protected authorizationParams() {
     const urlSearchParams: Record<string, string> = {
-      scope: this.scope.join(WhoopStrategyScopeSeperator),
+      scope: this.scope!,
     };
 
     return new URLSearchParams(urlSearchParams);
@@ -99,16 +97,5 @@ export class WhoopStrategy<User> extends OAuth2Strategy<
     let data: WhoopProfile = await response.json();
 
     return data;
-  }
-
-  // Allow users the option to pass a scope string, or typed array
-  private getScope(scope: WhoopStrategyOptions["scope"]) {
-    if (!scope) {
-      return WhoopStrategyDefaultScopes;
-    } else if (typeof scope === "string") {
-      return scope.split(WhoopStrategyScopeSeperator) as WhoopScope[];
-    }
-
-    return scope;
   }
 }
