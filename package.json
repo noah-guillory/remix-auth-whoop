@@ -50,7 +50,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "remix-auth": "^3.0.0",
+    "remix-auth": "^4.0.0",
     "remix-auth-oauth2": "^1.9.0"
   }
 }
